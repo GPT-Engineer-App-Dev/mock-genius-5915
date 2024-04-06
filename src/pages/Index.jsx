@@ -1,15 +1,12 @@
-// Complete the Index page component here
-// Use chakra-ui
-import { Button } from "@chakra-ui/react"; // example
-import { FaPlus } from "react-icons/fa"; // example - use react-icons/fa for icons
+import { Box } from "@chakra-ui/react";
+import OthelloBoard from "../components/OthelloBoard";
 
 const Index = () => {
-  // TODO: Create the website here!
   return (
-    <Button>
-      Hello world! <FaPlus />
-    </Button>
-  ); // example
+    <Box p={4}>
+      <OthelloBoard />
+    </Box>
+  );
 };
 
 export default Index;
