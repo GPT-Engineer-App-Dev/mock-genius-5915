@@ -1,5 +1,16 @@
-import { Grid, GridItem, Circle, Text, Box } from "@chakra-ui/react";
+import { Grid, GridItem, Circle, Text, Box, Button } from "@chakra-ui/react";
 import { useState } from "react";
+
+const INITIAL_BOARD = [
+  [null, null, null, null, null, null, null, null],
+  [null, null, null, null, null, null, null, null],
+  [null, null, null, null, null, null, null, null],
+  [null, null, null, "white", "green", null, null, null],
+  [null, null, null, "green", "white", null, null, null],
+  [null, null, null, null, null, null, null, null],
+  [null, null, null, null, null, null, null, null],
+  [null, null, null, null, null, null, null, null],
+];
 
 const DIRECTIONS = [
   [-1, -1],
@@ -51,37 +62,82 @@ const flipPieces = (board, pieces, player) => {
   }
 };
 
-const OthelloBoard = () => {
-  const [board, setBoard] = useState([
-    [null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null],
-    [null, null, null, "white", "green", null, null, null],
-    [null, null, null, "green", "white", null, null, null],
-    [null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null],
-  ]);
-  const [currentPlayer, setCurrentPlayer] = useState("white");
+const hasValidMoves = (board, player) => {
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      if (isValidMove(board, player, row, col)) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
 
+const getPlayerScore = (board, player) => {
+  let score = 0;
+  for (const row of board) {
+    for (const cell of row) {
+      if (cell === player) {
+        score++;
+      }
+    }
+  }
+  return score;
+};
+
+const OthelloBoard = () => {
+  const [board, setBoard] = useState(INITIAL_BOARD);
+  const [currentPlayer, setCurrentPlayer] = useState("white");
   const [invalidMove, setInvalidMove] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
+  const [winner, setWinner] = useState(null);
 
   const placePiece = (row, col) => {
-    if (isValidMove(board, currentPlayer, row, col)) {
-      const newBoard = board.map((row) => [...row]);
-      newBoard[row][col] = currentPlayer;
-
-      for (const [dRow, dCol] of DIRECTIONS) {
-        const pieces = getFlankingPieces(board, currentPlayer, row, col, dRow, dCol);
-        flipPieces(newBoard, pieces, currentPlayer);
-      }
-
-      setBoard(newBoard);
-      setCurrentPlayer(currentPlayer === "white" ? "green" : "white");
-      setInvalidMove(false);
-    } else {
+    if (gameOver || !isValidMove(board, currentPlayer, row, col)) {
       setInvalidMove(true);
+      return;
     }
+
+    const newBoard = board.map((row) => [...row]);
+    newBoard[row][col] = currentPlayer;
+
+    for (const [dRow, dCol] of DIRECTIONS) {
+      const pieces = getFlankingPieces(board, currentPlayer, row, col, dRow, dCol);
+      flipPieces(newBoard, pieces, currentPlayer);
+    }
+
+    setBoard(newBoard);
+    setInvalidMove(false);
+
+    const nextPlayer = currentPlayer === "white" ? "green" : "white";
+    if (!hasValidMoves(newBoard, nextPlayer)) {
+      if (!hasValidMoves(newBoard, currentPlayer)) {
+        const whiteScore = getPlayerScore(newBoard, "white");
+        const greenScore = getPlayerScore(newBoard, "green");
+
+        if (whiteScore > greenScore) {
+          setWinner("White");
+        } else if (greenScore > whiteScore) {
+          setWinner("Green");
+        } else {
+          setWinner("tie");
+        }
+
+        setGameOver(true);
+      } else {
+        return;
+      }
+    }
+
+    setCurrentPlayer(nextPlayer);
+  };
+
+  const resetGame = () => {
+    setBoard(INITIAL_BOARD);
+    setCurrentPlayer("white");
+    setInvalidMove(false);
+    setGameOver(false);
+    setWinner(null);
   };
 
   return (
@@ -95,7 +151,17 @@ const OthelloBoard = () => {
           )),
         )}
       </Grid>
+
       {invalidMove && <Text color="red">Invalid move. Try again.</Text>}
+
+      {gameOver && (
+        <Box mt={4}>
+          <Text fontSize="xl">{winner === "tie" ? "It's a tie!" : `${winner} wins!`}</Text>
+          <Button mt={4} onClick={resetGame}>
+            Play Again
+          </Button>
+        </Box>
+      )}
     </Box>
   );
 };
